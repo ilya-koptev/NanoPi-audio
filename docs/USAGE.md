@@ -100,10 +100,10 @@ in one step — run it by hand when you want to update.)
 
 ## Easter egg
 
-Clicking the 🔊 speaker icon at the top of the web page plays the track
-`/var/lib/mpd/music/egg.wav`. The package ships a short placeholder jingle there —
-replace that file on the device with any track you like (keep the name `egg.wav`)
-and it becomes your click sound.
+Any file named **`egg.*`** (e.g. `egg.mp3`, `egg.wav`) is **hidden from the track
+list** but plays when you click the 🔊 speaker icon at the top of the page. Upload
+your own `egg.mp3` (or `scp` it into `/var/lib/mpd/music/`) to set the click sound;
+the package ships a short placeholder `egg.wav` you can override.
 
 ## Troubleshooting
 

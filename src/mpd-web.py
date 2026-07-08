@@ -30,11 +30,20 @@ def mpc_o(*a):
     return run("mpc", *a, timeout=10).stdout
 
 
-def tracks():
+def list_all():
     try:
         return sorted((f for f in os.listdir(MUSIC) if f.lower().endswith(EXT)), key=str.lower)
     except FileNotFoundError:
         return []
+
+
+def tracks():
+    # visible library — the easter-egg file (egg.*) is hidden from the list
+    return [f for f in list_all() if not f.lower().startswith("egg.")]
+
+
+def egg_track():
+    return next((f for f in list_all() if f.lower().startswith("egg.")), None)
 
 
 def safe(name):
@@ -344,7 +353,7 @@ class H(BaseHTTPRequestHandler):
                 mpc("clear"); mpc("add", f); mpc("play")
             self._send(204 if f else 404)
         elif p == "/api/egg":
-            egg = next((f for f in tracks() if f.lower().startswith("egg.")), None)
+            egg = egg_track()
             if egg:
                 mpc("clear"); mpc("add", egg); mpc("play")
             self._send(204 if egg else 404)
