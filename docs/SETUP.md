@@ -1,70 +1,72 @@
-# Setup — from a blank SD card to playing audio
+# Настройка — от чистой SD-карты до звука
 
-This walks through preparing a NanoPi NEO from scratch: flashing the OS from the
-official image, first boot, wiring the amplifier, and installing `nanopi-audio`.
+Пошагово: подготовить NanoPi NEO с нуля — записать ОС из официального образа,
+первая загрузка, распайка усилителя, установка `nanopi-audio`.
 
 ---
 
-## 1. Get the OS image (official site)
+## 1. Взять образ ОС (официальный сайт)
 
-The board runs **Armbian** (Debian-based). Download an image built for the
-NanoPi NEO from an official source:
+Плата работает на **Armbian** (на базе Debian). Скачайте образ для NanoPi NEO из
+официального источника:
 
-- **Armbian** — <https://www.armbian.com/nanopi-neo/> → a *Debian (Trixie/Bookworm)*
-  server image (CLI, no desktop). This is what this project is tested on.
-- Or **FriendlyELEC** — <https://www.friendlyelec.com/> (Resources → NanoPi NEO)
-  for their vendor image.
+- **Armbian** — <https://www.armbian.com/nanopi-neo/> → серверный образ *Debian
+  (Trixie/Bookworm)* (CLI, без рабочего стола). Именно на нём проект и проверялся.
+- Либо **FriendlyELEC** — <https://www.friendlyelec.com/> (Resources → NanoPi NEO),
+  вендорский образ.
 
-You get a file like `Armbian_<ver>_Nanopineo_trixie_current_<kernel>.img.xz`.
+Получите файл вида `Armbian_<версия>_Nanopineo_trixie_current_<ядро>.img.xz`.
 
-## 2. Flash it to a microSD card
+## 2. Записать на microSD
 
-Use an **8 GB+** card. Easiest cross-platform tool is **balenaEtcher**
-(<https://etcher.balena.io/>): select the `.img.xz` (no need to unpack), select
-the card, Flash. Verify is automatic.
+Карта **8 ГБ+**. Проще всего кроссплатформенным **balenaEtcher**
+(<https://etcher.balena.io/>): выбрать `.img.xz` (распаковывать не нужно), выбрать
+карту, Flash. Проверка записи — автоматически.
 
 <details>
-<summary>Command line alternatives</summary>
+<summary>Через командную строку</summary>
 
-- **Windows (Git Bash):** unpack then write with `dd` (elevated). Double-check the
-  device path — writing to the wrong disk destroys it.
-- **Linux/macOS:** `xzcat image.img.xz | sudo dd of=/dev/sdX bs=4M status=progress conv=fsync`
+- **Windows (Git Bash):** распаковать и записать `dd` (с правами администратора).
+  Трижды проверьте путь к устройству — запись не на тот диск уничтожит данные.
+- **Linux/macOS:** `xzcat образ.img.xz | sudo dd of=/dev/sdX bs=4M status=progress conv=fsync`
 
-Always eject/sync and read-back-verify before removing the card.
+Перед извлечением карты обязательно `sync` и проверка чтением.
 </details>
 
-## 3. First boot
+## 3. Первая загрузка
 
-1. Insert the card, connect **Ethernet**, then power via the micro-USB port.
-2. Wait ~1–2 minutes for the first boot (it resizes the filesystem and reboots).
-3. Find the board's IP — check your router's DHCP leases, or `ping nanopineo.local`,
-   or scan the subnet. A **serial debug console** (separate 4-pin UART header,
-   **115200 8N1**) is the reliable fallback if the network doesn't come up.
-4. SSH in and complete Armbian's first-run (set root password, create a user):
+1. Вставьте карту, подключите **Ethernet**, подайте питание на micro-USB.
+2. Подождите ~1–2 минуты (расширяется ФС и происходит перезагрузка).
+3. Найдите IP платы — в аренде DHCP роутера, через `ping nanopineo.local`, либо
+   сканом подсети. Надёжный запасной вариант — **отладочная консоль UART**
+   (отдельная 4-контактная гребёнка, **115200 8N1**).
+4. Зайдите по SSH и завершите первичную настройку Armbian (пароль root, пользователь):
    ```bash
-   ssh root@<board-ip>
+   ssh root@<ip-платы>
    ```
 
-> Tip: set up an SSH key so later steps (and updates) are password-free.
+> Совет: настройте вход по SSH-ключу, чтобы дальнейшие шаги шли без пароля.
 
-## 4. Wire the amplifier — board powered OFF
+## 4. Распайка усилителя — плата ОБЕСТОЧЕНА
 
-Solder per the table below (NanoPi NEO **12-pin** header). Keep leads short.
+Паяйте по таблице (12-контактная гребёнка NanoPi NEO). Провода — короткие.
 
-| Header pin | Signal      | → MAX98357A |
-|-----------:|-------------|-------------|
-| 1          | VDD_5V      | Vin         |
-| 8          | I2S0_LRC    | LRC         |
-| 9          | I2S0_BCK    | BCLK        |
-| 10         | I2S0_SDOUT  | DIN         |
-| 11         | PA21 (GPIO) | SD (mute)   |
-| 12         | GND         | GND         |
+| Пин | Сигнал      | → MAX98357A |
+|----:|-------------|-------------|
+| 1   | VDD_5V      | Vin         |
+| 8   | I2S0_LRC    | LRC         |
+| 9   | I2S0_BCK    | BCLK        |
+| 10  | I2S0_SDOUT  | DIN         |
+| 11  | PA21 (GPIO) | SD (mute)   |
+| 12  | GND         | GND         |
 
-- **GAIN**: leave unconnected → 9 dB. Tie to GND for more gain (up to 15 dB).
-- **SD**: the mute line. A weak on-board pull-up (≈1 MΩ) is fine — the GPIO drives it.
-- **Speaker**: 4–8 Ω across the amp's OUT+ / OUT−.
+- **GAIN**: не подключать → 9 дБ. На GND — до 15 дБ.
+- **SD**: линия mute. Слабая подтяжка на плате (≈1 МОм) не мешает — GPIO её пересиливает.
+- **Динамик**: 4–8 Ом на OUT+ / OUT− усилителя.
 
-## 5. Install nanopi-audio
+Питание всего узла — см. схему в [BOM.md](BOM.md): вход 12 В → понижайка 5 В.
+
+## 5. Установка nanopi-audio
 
 ```bash
 curl -fsSL https://ilya-koptev.github.io/NanoPi-audio/nanopi-audio.list \
@@ -73,21 +75,21 @@ sudo apt-get update && sudo apt-get install -y nanopi-audio
 sudo reboot
 ```
 
-The reboot is **required once**: the audio overlay is applied by U-Boot at boot,
-so the sound card only appears after restarting.
+Перезагрузка нужна **один раз**: аудио-оверлей применяется U-Boot при загрузке,
+поэтому звуковая карта появляется только после рестарта.
 
-## 6. Verify
+## 6. Проверка
 
 ```bash
-aplay -l                       # expect: card 0: max98357a [max98357a] ...
+aplay -l                       # ожидается: card 0: max98357a [max98357a] ...
 systemctl status nanopi-audio-web nanopi-audio-mqtt --no-pager
 ```
 
-Open **`http://<board-ip>/`** in a browser. Upload a track and press ▶ — you should
-hear audio. If not, see Troubleshooting in [USAGE.md](USAGE.md).
+Откройте **`http://<ip-платы>/`** в браузере. Загрузите трек, нажмите ▶ — должен пойти
+звук. Если нет — раздел «Диагностика» в [USAGE.md](USAGE.md).
 
-## 7. (Optional) static IP
+## 7. (Опционально) статический IP
 
-You can set a static address later from the web UI (**Network** section) — it applies
-with an **auto-revert**, so a wrong setting reverts itself if you don't confirm from
-the new address. See [USAGE.md](USAGE.md#network).
+Статический адрес можно задать позже из веб-интерфейса (раздел **Сеть**) — он
+применяется с **автооткатом**: неверная настройка сама откатится, если не подтвердить
+с нового адреса. См. [USAGE.md](USAGE.md#сеть).

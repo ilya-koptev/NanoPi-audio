@@ -173,6 +173,7 @@ h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.09em;color:var(--dim
 .status{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:.7rem .9rem;color:var(--dim)}
 .upd{background:var(--acw);border:1px solid var(--ac);color:var(--ac);border-radius:10px;padding:.6rem .9rem;margin-bottom:1rem;font-size:.9rem;display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .upd button{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:600}
+.upd.current{background:var(--card);border-color:var(--bd);color:var(--dim)}
 .status b{color:var(--fg)}
 .ctl{display:flex;align-items:center;gap:1rem;margin-top:.8rem;flex-wrap:wrap}
 input[type=range]{flex:1;min-width:140px;accent-color:var(--ac)}
@@ -316,13 +317,13 @@ function applyNet(){
 }
 function keepNet(){fetch('/api/net/keep').then(function(){var m=document.getElementById('netmsg');m.className='msg ok';m.textContent='Закреплено. Конфигурация теперь постоянная.';document.getElementById('keepbtn').hidden=true;})}
 function checkUpd(refresh){fetch('/api/update'+(refresh?'?refresh=1':'')).then(function(r){return r.json()}).then(function(s){
-  var el=document.getElementById('upd');
-  if(s.available){el.hidden=false;el.innerHTML='<span>Доступно обновление: <b>'+s.installed+'</b> → <b>'+s.candidate+'</b></span><button onclick="applyUpd()">Обновить</button>';}
-  else{el.hidden=true;}}).catch(function(){})}
+  var el=document.getElementById('upd');el.hidden=false;
+  if(s.available){el.className='upd';el.innerHTML='<span>Доступно обновление: <b>'+s.installed+'</b> → <b>'+s.candidate+'</b></span><button onclick="applyUpd()">Обновить</button>';}
+  else{el.className='upd current';el.innerHTML='<span>Установлена последняя версия'+(s.installed?': <b>'+s.installed+'</b>':'')+'</span>';}}).catch(function(){})}
 function applyUpd(){document.getElementById('upd').innerHTML='<span>Обновление… страница переподключится.</span>';
   fetch('/api/update/apply').catch(function(){});
   setTimeout(function poll(){fetch('/api/update').then(function(r){return r.json()}).then(function(s){if(!s.available){location.reload()}else{setTimeout(poll,4000)}}).catch(function(){setTimeout(poll,4000)})},8000);}
-setInterval(upd,2000);upd();loadNet();checkUpd(true);
+setInterval(upd,2000);upd();loadNet();checkUpd(false);checkUpd(true);
 document.getElementById('spk').addEventListener('click',function(){fetch('/api/egg').then(upd)});
 </script></body></html>"""
 

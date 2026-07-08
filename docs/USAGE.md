@@ -1,119 +1,120 @@
-# Usage
+# Использование
 
-How to drive `nanopi-audio` day to day — web UI, MQTT, adding music, and fixes.
+Как управлять `nanopi-audio` в быту — веб-интерфейс, MQTT, добавление музыки, фиксы.
 
-The board exposes three things on the LAN:
+Плата отдаёт в локальную сеть три вещи:
 
-| Service | Address | For |
-|---------|---------|-----|
-| Web UI  | `http://<ip>/` (port 80) | browser control + uploads + network |
-| MQTT    | `<ip>:1883` (anonymous)  | automation / home control |
-| MPD     | `<ip>:6600`              | any MPD client (e.g. M.A.L.P.) |
+| Сервис | Адрес | Для чего |
+|--------|-------|----------|
+| Веб    | `http://<ip>/` (порт 80) | управление из браузера + загрузка + сеть |
+| MQTT   | `<ip>:1883` (анонимно)   | автоматизация / умный дом |
+| MPD    | `<ip>:6600`              | любой MPD-клиент (напр. M.A.L.P.) |
 
 ---
 
-## Web UI
+## Веб-интерфейс
 
-Open `http://<board-ip>/`.
+Откройте `http://<ip-платы>/`.
 
-- **Now playing** line at the top shows state and current track.
-- **Tracks** — press ▶ to play, ✕ to delete.
-- **Stop** / **Volume** slider / **Loop** toggle (loop the current track vs play once).
-- **Upload files** — pick one or more audio files; they land in the library and the
-  database refreshes automatically.
-- **Network** — see [below](#network).
+- **Строка обновления** сверху: показывает установленную версию, а при наличии новой
+  в apt — кнопку «Обновить».
+- **Сейчас играет** — состояние и текущий трек.
+- **Треки** — ▶ играть, ✕ удалить.
+- **Стоп** / ползунок **Громкость** / **Повтор** (повтор текущего трека или один раз).
+- **Загрузка файлов** — один или несколько файлов; попадают в библиотеку, база
+  обновляется автоматически.
+- **Сеть** — см. [ниже](#сеть).
 
-Supported files: mp3, flac, wav, ogg, m4a, aac, opus, wma.
+Поддерживаемые форматы: mp3, flac, wav, ogg, m4a, aac, opus, wma.
 
 ## MQTT
 
-Publish commands; subscribe to read state and logs. Broker is on the board,
-port 1883, anonymous (LAN only — add auth if it's reachable more widely).
+Команды публикуете; состояние и логи читаете по подписке. Брокер на плате, порт 1883,
+анонимно (только локальная сеть — добавьте аутентификацию, если доступен шире).
 
-| Topic          | Payload | Direction | Meaning |
-|----------------|---------|-----------|---------|
-| `audio/track`  | `N`     | in  | play the file whose name starts with `N.` (e.g. `2.mp3`) |
-| `audio/volume` | `0`–`100` | in | set volume |
-| `audio/play`   | `1` / `0` | in | play / stop |
-| `audio/loop`   | `1` / `0` | in | loop the current track / play once |
-| `audio/state`  | text    | out (retained) | e.g. `playing: 2.mp3 \| vol=80 loop=on` |
-| `audio/log`    | text    | out | timestamped event line per command |
+| Топик          | Значение | Направление | Смысл |
+|----------------|----------|-------------|-------|
+| `audio/track`  | `N`      | вход | играть файл, имя которого начинается с `N.` (напр. `2.mp3`) |
+| `audio/volume` | `0`–`100` | вход | громкость |
+| `audio/play`   | `1` / `0` | вход | играть / стоп |
+| `audio/loop`   | `1` / `0` | вход | повтор текущего трека / один раз |
+| `audio/state`  | текст    | выход (retained) | напр. `playing: 2.mp3 \| vol=80 loop=on` |
+| `audio/log`    | текст    | выход | строка события на каждую команду |
 
-Examples (from any machine on the LAN):
+Примеры (с любой машины в сети):
 
 ```bash
-mosquitto_pub -h <ip> -t audio/track  -m 2     # play 2.*
-mosquitto_pub -h <ip> -t audio/loop   -m 1     # loop it
+mosquitto_pub -h <ip> -t audio/track  -m 2     # играть 2.*
+mosquitto_pub -h <ip> -t audio/loop   -m 1     # зациклить
 mosquitto_pub -h <ip> -t audio/volume -m 80
-mosquitto_pub -h <ip> -t audio/play   -m 0     # stop  (1 = play/resume)
-mosquitto_sub -h <ip> -t 'audio/#' -v          # watch state + logs
+mosquitto_pub -h <ip> -t audio/play   -m 0     # стоп  (1 = играть)
+mosquitto_sub -h <ip> -t 'audio/#' -v          # смотреть состояние + логи
 ```
 
-**Play once vs loop:** publish `audio/loop 0`, then `audio/track N` — the track plays
-and stops. Publish `audio/loop 1` to repeat the current track.
+**Один раз или повтор:** опубликуйте `audio/loop 0`, затем `audio/track N` — трек
+сыграет и остановится. `audio/loop 1` — повтор текущего трека.
 
-## Adding music
+## Добавление музыки
 
-Copy files into the library and refresh the database:
+Скопируйте файлы в библиотеку и обновите базу:
 
 ```bash
 scp track.mp3 <user>@<ip>:/var/lib/mpd/music/
 ssh <ip> 'mpc update'
 ```
 
-…or just use the **Upload** button in the web UI.
+…либо кнопкой **Загрузить** в веб-интерфейсе.
 
-For MQTT `audio/track N`, name files with a leading number: `1.mp3`, `2.flac`, `10.wav`.
-The board ships demo tones `1/2/3.wav` (440/660/880 Hz) you can replace.
+Для `audio/track N` называйте файлы с ведущим номером: `1.mp3`, `2.flac`, `10.wav`.
+На плате уже лежат демо-тоны `1/2/3.wav` (440/660/880 Гц) — замените своими.
 
-## Network
+## Сеть
 
-**Network** section of the web UI shows the current interface, IP, gateway, DNS and
-mode, and lets you switch **DHCP ⇄ Static**.
+Раздел **Сеть** показывает текущий интерфейс, IP, шлюз, DNS и режим и позволяет
+переключить **DHCP ⇄ Статический**.
 
-Static apply is **safety-gated**:
+Применение статики защищено **автооткатом**:
 
-1. Choose *Static*, fill IP / mask (CIDR), gateway, DNS, set the *Auto-revert* timeout.
-2. Press **Apply** — the connection to the old IP drops (expected).
-3. Reopen the page at the **new** IP and press **Keep** within the timeout.
-   - **Keep** → the config becomes permanent.
-   - No confirmation (e.g. the new IP is unreachable) → it **auto-reverts** to the
-     previous working configuration.
+1. Выберите *Статический*, заполните IP / маску (CIDR), шлюз, DNS, задайте таймаут
+   *Автооткат*.
+2. Нажмите **Применить** — соединение по старому IP оборвётся (это ожидаемо).
+3. Откройте страницу по **новому** IP и нажмите **Оставить** до истечения таймаута.
+   - **Оставить** → конфигурация станет постоянной.
+   - Нет подтверждения (новый IP недоступен) → **автооткат** к прежней рабочей сети.
 
-Do **not** reboot during the wait window — the revert snapshot lives in RAM. If you
-ever lock yourself out, recover via the serial console or by editing
-`/etc/netplan` on the SD card.
+**Не перезагружайте** плату в окне ожидания — снимок для отката хранится в ОЗУ. Если
+всё же потеряли доступ — восстановление через консоль UART или правкой
+`/etc/netplan` на SD-карте.
 
-## Updates
+## Обновления
 
-Updates are **manual** — nothing auto-upgrades. When a new version is published,
-on the board run:
+Обновления **ручные** — ничего не обновляется само. Когда выйдет новая версия, на плате:
 
 ```bash
 sudo apt update && sudo apt install --only-upgrade nanopi-audio
-# or install a downloaded package directly:
+# или поставить скачанный пакет напрямую:
 sudo apt install ./nanopi-audio_*.deb
 ```
 
-(There is also `/usr/local/bin/nanopi-audio-update.sh`, which does the apt upgrade
-in one step — run it by hand when you want to update.)
+В веб-интерфейсе то же самое — строка обновления сверху с кнопкой «Обновить». Также есть
+`/usr/local/bin/nanopi-audio-update.sh`, делающий apt-обновление одной командой.
 
-## Easter egg
+## Пасхалка
 
-Any file named **`egg.*`** (e.g. `egg.mp3`, `egg.wav`) is **hidden from the track
-list** but plays when you click the 🔊 speaker icon at the top of the page. Upload
-your own `egg.mp3` (or `scp` it into `/var/lib/mpd/music/`) to set the click sound;
-the package ships a short placeholder `egg.wav` you can override.
+Клик по значку 🔊 вверху страницы играет трек `/var/lib/mpd/music/egg.wav`. Файл с
+именем **`egg.*`** (напр. `egg.mp3`) **скрыт из списка треков**, но играет по клику.
+Загрузите свой `egg.mp3` (или `scp` в `/var/lib/mpd/music/`) — он станет «секретным»
+треком по нажатию; в пакете лежит короткий джингл-заглушка `egg.wav`.
 
-## Troubleshooting
+## Диагностика
 
-| Symptom | Check |
-|---------|-------|
-| No `card 0: max98357a` in `aplay -l` | did you **reboot** after install? `dmesg \| grep -i i2s` |
-| Card present but silent | I²S pins muxed? `cat /sys/kernel/debug/pinctrl/1c20800.pinctrl/pinmux-pins \| grep 'pin 18'` |
-| Very quiet | check the file's level: `ffmpeg -i f -af volumedetect -f null -` (the amp is fine) |
-| Crackle at stop | SD wire to **pin 11 (PA21)** present? `cat /sys/kernel/debug/gpio \| grep sdmode` |
-| Web UI down | `systemctl status nanopi-audio-web` |
-| MQTT no response | `systemctl status nanopi-audio-mqtt mosquitto` |
+| Симптом | Что проверить |
+|---------|---------------|
+| Нет `card 0: max98357a` в `aplay -l` | перезагружали после установки? `dmesg \| grep -i i2s` |
+| Карта есть, но тишина | пины I²S замультиплексированы? `cat /sys/kernel/debug/pinctrl/1c20800.pinctrl/pinmux-pins \| grep 'pin 18'` |
+| Очень тихо | уровень файла: `ffmpeg -i f -af volumedetect -f null -` (усилитель исправен) |
+| Треск на стопе | провод SD на **пин 11 (PA21)** есть? `cat /sys/kernel/debug/gpio \| grep sdmode` |
+| Веб не открывается | `systemctl status nanopi-audio-web` |
+| MQTT не отвечает | `systemctl status nanopi-audio-mqtt mosquitto` |
 
-Services: `nanopi-audio-web`, `nanopi-audio-mqtt`, `mpd`, `mosquitto`.
+Сервисы: `nanopi-audio-web`, `nanopi-audio-mqtt`, `mpd`, `mosquitto`.

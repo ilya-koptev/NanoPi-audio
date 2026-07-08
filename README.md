@@ -1,124 +1,126 @@
 # NanoPi-audio
 
-Turn a **NanoPi NEO** (Allwinner H3) into a small networked audio player driving a
-**MAX98357A I²S DAC**, controlled from a browser or over MQTT.
+Превращает **NanoPi NEO** (Allwinner H3) в небольшой сетевой аудиоплеер на базе
+**I²S-ЦАП MAX98357A**, управляемый из браузера или по MQTT.
 
-Everything ships as one Debian package: the device-tree overlay for the DAC, the
-MPD output configuration, a dependency-free web UI, and an MQTT bridge — plus an
-apt-based auto-update.
+Всё поставляется одним Debian-пакетом: оверлей устройства для ЦАП, настройка вывода
+MPD, веб-интерфейс без внешних зависимостей и MQTT-мост.
 
 ---
 
-## Features
+## Возможности
 
-- **I²S output** to a MAX98357A class-D amp (2 analog channels mixed to mono),
-  via a self-contained device-tree overlay — no kernel patching.
-- **MPD** as the player, reachable on the network (port 6600) for any MPD client.
-- **Web UI** at `http://<board-ip>/` — no external dependencies, no cloud:
-  - track list with play / delete,
-  - drag-and-drop file upload,
-  - stop, volume, **loop / play-once** toggle,
-  - **network settings** (DHCP ⇄ static IP) with a safety **auto-revert**.
-- **MQTT control** — publish to `audio/track`, `audio/volume`, `audio/play`,
-  `audio/loop`; the board publishes `audio/state` (retained) and `audio/log`.
-- **Install & manual update** over apt (GitHub Pages repo) or a downloaded `.deb`.
+- **Вывод по I²S** на усилитель класса D MAX98357A (2 канала сводятся в моно), через
+  самодостаточный device-tree overlay — без правок ядра.
+- **MPD** как проигрыватель, доступен по сети (порт 6600) для любого MPD-клиента.
+- **Веб-интерфейс** по адресу `http://<ip-платы>/` — без внешних зависимостей и облака:
+  - список треков с воспроизведением / удалением,
+  - загрузка файлов,
+  - стоп, громкость, **повтор / один раз**,
+  - **настройки сети** (DHCP ⇄ статический IP) с безопасным **автооткатом**,
+  - строка **обновления** (проверка apt, обновление по кнопке).
+- **Управление по MQTT** — публикация в `audio/track`, `audio/volume`, `audio/play`,
+  `audio/loop`; плата публикует `audio/state` (retained) и `audio/log`.
+- **Установка и ручное обновление** через apt (репозиторий на GitHub Pages) или `.deb`.
 
-## Hardware
+## Железо
 
-Full parts list with links: **[docs/BOM.md](docs/BOM.md)** (NanoPi NEO, MAX98357A,
-12 V→5 V buck, speaker).
+Полный список деталей со ссылками: **[docs/BOM.md](docs/BOM.md)** (NanoPi NEO,
+MAX98357A, понижайка 12 В→5 В, динамик).
 
-Only three signal wires plus power, ground and a mute line. Solder with the board
-**powered off**. Pins refer to the NanoPi NEO 12-pin header.
+Всего три сигнальных провода плюс питание, земля и линия mute. Паять при
+**обесточенной** плате. Пины — 12-контактная гребёнка NanoPi NEO.
 
-| Header pin | Signal        | SoC   | MAX98357A |
-|-----------:|---------------|-------|-----------|
-| 1          | VDD_5V        | —     | Vin       |
-| 8          | I2S0_LRC      | PA18  | LRC       |
-| 9          | I2S0_BCK      | PA19  | BCLK      |
-| 10         | I2S0_SDOUT    | PA20  | DIN       |
-| 11         | (GPIO)        | PA21  | SD (mute) |
-| 12         | GND           | —     | GND       |
+| Пин | Сигнал        | SoC   | MAX98357A |
+|----:|---------------|-------|-----------|
+| 1   | VDD_5V        | —     | Vin       |
+| 8   | I2S0_LRC      | PA18  | LRC       |
+| 9   | I2S0_BCK      | PA19  | BCLK      |
+| 10  | I2S0_SDOUT    | PA20  | DIN       |
+| 11  | (GPIO)        | PA21  | SD (mute) |
+| 12  | GND           | —     | GND       |
 
-Leave **GAIN** unconnected (9 dB). Speaker: 4–8 Ω on the amp output.
-Enabling I²S disables `i2c1` (shared PA18/PA19) — this is expected.
+**GAIN** не подключать (9 дБ). Динамик: 4–8 Ом на выход усилителя.
+Включение I²S отключает `i2c1` (общие пины PA18/PA19) — это ожидаемо.
 
-## Signal chain
+## Сигнальная цепь
 
 ```
 MQTT audio/*  ─▶  nanopi-audio-mqtt  ─▶  mpc ─▶ MPD ─▶ ALSA hw:max98357a
                                                    ─▶ sun4i-i2s @1c22000
-                                                   ─▶ PA18/19/20 ─▶ MAX98357A ─▶ speaker
-Web UI (:80)  ─▶  MPD / netplan / uploads
+                                                   ─▶ PA18/19/20 ─▶ MAX98357A ─▶ динамик
+Веб (:80)     ─▶  MPD / netplan / загрузка файлов
 ```
 
-## Install
+## Установка
 
-On a NanoPi NEO already running Armbian (see [docs/SETUP.md](docs/SETUP.md) to get there):
+На NanoPi NEO с уже установленным Armbian (как к этому прийти — см.
+[docs/SETUP.md](docs/SETUP.md)):
 
 ```bash
-# add the apt repo and install
+# добавить apt-репозиторий и поставить
 curl -fsSL https://ilya-koptev.github.io/NanoPi-audio/nanopi-audio.list \
   | sudo tee /etc/apt/sources.list.d/nanopi-audio.list
 sudo apt-get update && sudo apt-get install -y nanopi-audio
-sudo reboot        # required once: the overlay is applied by U-Boot at boot
+sudo reboot        # один раз: оверлей применяется U-Boot при загрузке
 
-# update later (manual):
+# обновление потом (вручную):
 sudo apt update && sudo apt install --only-upgrade nanopi-audio
 ```
 
-Or install a single `.deb` from the [Releases](https://github.com/ilya-koptev/NanoPi-audio/releases):
+Либо поставить один `.deb` из [релизов](https://github.com/ilya-koptev/NanoPi-audio/releases):
 
 ```bash
 sudo apt-get install -y ./nanopi-audio_*.deb
 sudo reboot
 ```
 
-After reboot, `aplay -l` should list `card 0: max98357a`. Open `http://<board-ip>/`.
+После перезагрузки `aplay -l` должен показать `card 0: max98357a`.
+Откройте `http://<ip-платы>/`.
 
-Full walkthrough: **[docs/SETUP.md](docs/SETUP.md)** · Day-to-day use: **[docs/USAGE.md](docs/USAGE.md)**.
+Подробно: **[docs/SETUP.md](docs/SETUP.md)** · Как пользоваться: **[docs/USAGE.md](docs/USAGE.md)**.
 
-## Build from source
+## Сборка из исходников
 
-The package is `Architecture: all` (the overlay is compiled on the target at
-install time), so it builds on any Linux with `dpkg-deb`:
+Пакет `Architecture: all` (оверлей компилируется на плате при установке), поэтому
+собирается на любом Linux с `dpkg-deb`:
 
 ```bash
 git clone https://github.com/ilya-koptev/NanoPi-audio
 cd NanoPi-audio
-bash packaging/build-deb.sh      # -> build/nanopi-audio_<version>_all.deb
+bash packaging/build-deb.sh      # -> build/nanopi-audio_<версия>_all.deb
 ```
 
-Tagging `vX.Y.Z` triggers CI (`.github/workflows/release.yml`) to build the
-`.deb`, attach it to a GitHub Release, and publish the apt repo to GitHub Pages.
+Тег `vX.Y.Z` запускает CI (`.github/workflows/release.yml`): собрать `.deb`,
+приложить к GitHub Release и опубликовать apt-репозиторий на GitHub Pages.
 
-## Repository layout
+## Структура репозитория
 
 ```
-overlay/     max98357a.dts            device-tree overlay (DAC + I2S pins + SD mute)
-src/         mpd-web.py               web UI server (stdlib only)
-             mqtt-audio.sh            MQTT <-> MPD bridge + state/log publisher
-             net-rollback.sh          network auto-revert helper
-             nanopi-audio-update.sh   apt self-update
-config/      mosquitto + apt source
-systemd/     web / mqtt / update units + timer
-packaging/   Debian control + maintainer scripts + build-deb.sh
-docs/        SETUP.md, USAGE.md
+overlay/     max98357a.dts            оверлей (ЦАП + пины I2S + mute SD)
+src/         mpd-web.py               веб-сервер (только stdlib)
+             mqtt-audio.sh            мост MQTT <-> MPD + публикация состояния/логов
+             net-rollback.sh          автооткат сети
+             nanopi-audio-update.sh   ручное обновление через apt
+config/      mosquitto + apt-источник
+systemd/     юниты web / mqtt / update
+packaging/   Debian control + сопровождающие скрипты + build-deb.sh
+docs/        SETUP.md, USAGE.md, BOM.md
 ```
 
-## Notes learned the hard way
+## Грабли, на которые мы наступили
 
-Four independent issues each had to be fixed before clean audio came out; they are
-baked into the overlay and config here so you don't hit them again:
+Четыре независимые проблемы, каждую пришлось решить до чистого звука; всё уже учтено
+в оверлее и конфигах здесь:
 
-1. **`sun4i-i2s: Unsupported oversample rate`** — needs `mclk-fs=512` and a clock
-   master in the simple-audio-card.
-2. **Silent output** — the I²S pins must be muxed (`pinctrl`), or nothing reaches
-   the header even though playback "works".
-3. **Quiet tones** — the DAC is fine; verify source level (`ffmpeg … volumedetect`).
-4. **Crackle at stop** — the amp amplifies I²S garbage on stop; the `SD → PA21`
-   mute line (`sdmode-gpios`) silences it.
+1. **`sun4i-i2s: Unsupported oversample rate`** — нужны `mclk-fs=512` и мастер
+   тактирования в simple-audio-card.
+2. **Тишина при рабочем ПО** — пины I²S должны быть замультиплексированы (`pinctrl`),
+   иначе сигнал не выходит на гребёнку.
+3. **Тихий звук** — ЦАП исправен; проверяйте уровень источника (`ffmpeg … volumedetect`).
+4. **Треск на стопе** — усилитель озвучивает мусор I²S; линия mute `SD → PA21`
+   (`sdmode-gpios`) это убирает.
 
-## License
+## Лицензия
 
-MIT — see [LICENSE](LICENSE).
+MIT — см. [LICENSE](LICENSE).
