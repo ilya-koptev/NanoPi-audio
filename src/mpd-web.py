@@ -46,6 +46,25 @@ def egg_track():
     return next((f for f in list_all() if f.lower().startswith("egg.")), None)
 
 
+def dpkg_gt(a, b):
+    return run("dpkg", "--compare-versions", a, "gt", b).returncode == 0
+
+
+def pkg_versions(refresh=False):
+    if refresh:
+        run("apt-get", "update",
+            "-o", "Dir::Etc::SourceList=/etc/apt/sources.list.d/nanopi-audio.list",
+            "-o", "Dir::Etc::SourceParts=/dev/null",
+            "-o", "APT::Get::List-Cleanup=0", timeout=90)
+    inst = run("dpkg-query", "-W", "-f=${Version}", "nanopi-audio").stdout.strip()
+    cand = ""
+    m = re.search(r"Candidate:\s*(\S+)", run("apt-cache", "policy", "nanopi-audio").stdout)
+    if m and m.group(1) != "(none)":
+        cand = m.group(1)
+    return {"installed": inst, "candidate": cand,
+            "available": bool(cand) and cand != inst and dpkg_gt(cand, inst)}
+
+
 def safe(name):
     n = os.path.basename((name or "").replace("\\", "/"))
     return n if n and n in tracks() else None
@@ -141,7 +160,7 @@ def net_keep():
 PAGE = """<!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NanoPi audio</title>
+<title>NanoPi аудио</title>
 <style>
 :root{--bg:#f6f8f8;--fg:#131a1d;--dim:#58656a;--card:#fff;--bd:#dbe2e2;--ac:#0b8a7c;--acw:#e0f0ed;--warn:#b26e12;--crit:#c13f39}
 @media(prefers-color-scheme:dark){:root{--bg:#0d1215;--fg:#e6ecee;--dim:#8d9ea4;--card:#141b1f;--bd:#253138;--ac:#33b7a6;--acw:#12302a;--warn:#dfa24c;--crit:#e5685f}}
@@ -152,6 +171,8 @@ h1{font-size:1.5rem;margin:.2rem 0 1rem;letter-spacing:-.01em}
 h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);margin:2rem 0 .6rem;font-family:ui-monospace,Menlo,Consolas,monospace}
 .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
 .status{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:.7rem .9rem;color:var(--dim)}
+.upd{background:var(--acw);border:1px solid var(--ac);color:var(--ac);border-radius:10px;padding:.6rem .9rem;margin-bottom:1rem;font-size:.9rem;display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.upd button{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:600}
 .status b{color:var(--fg)}
 .ctl{display:flex;align-items:center;gap:1rem;margin-top:.8rem;flex-wrap:wrap}
 input[type=range]{flex:1;min-width:140px;accent-color:var(--ac)}
@@ -188,86 +209,87 @@ table.mqtt-t td:first-child,table.mqtt-t td:nth-child(2){font-family:ui-monospac
 pre{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:.8rem;overflow-x:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem;line-height:1.55;margin:0}
 [hidden]{display:none!important}
 </style></head><body><main>
-<h1><span id="spk" style="cursor:pointer;-webkit-user-select:none;user-select:none">&#128266;</span> <span id="ttl">NanoPi &mdash; audio</span></h1>
+<h1><span id="spk" style="cursor:pointer;-webkit-user-select:none;user-select:none">&#128266;</span> <span id="ttl">NanoPi &mdash; аудио</span></h1>
+<div class="upd" id="upd" hidden></div>
 <div class="status" id="st">&hellip;</div>
 <div class="ctl">
-  <button onclick="api('/api/stop').then(upd)">&#9632; Stop</button>
-  <button id="loopbtn" onclick="toggleLoop()">&#8635; Loop: off</button>
-  <label style="flex:1;display:flex;gap:.6rem;align-items:center">Volume
+  <button onclick="api('/api/stop').then(upd)">&#9632; Стоп</button>
+  <button id="loopbtn" onclick="toggleLoop()">&#8635; Повтор: выкл</button>
+  <label style="flex:1;display:flex;gap:.6rem;align-items:center">Громкость
     <input id="vol" type="range" min="0" max="100" oninput="api('/api/vol?v='+this.value)"></label>
 </div>
-<h2>Tracks</h2>
+<h2>Треки</h2>
 <ul>%TRACKS%</ul>
-<h2>Upload files</h2>
+<h2>Загрузка файлов</h2>
 <form method="post" action="/upload" enctype="multipart/form-data">
   <input type="file" name="f" multiple accept="audio/*" required>
-  <button type="submit">Upload</button>
+  <button type="submit">Загрузить</button>
 </form>
 
-<h2>Network</h2>
+<h2>Сеть</h2>
 <div class="net">
   <div class="cur" id="netcur">&hellip;</div>
-  <div class="row"><label>Mode</label>
+  <div class="row"><label>Режим</label>
     <label><input type="radio" name="mode" value="dhcp" onchange="toggleStatic()"> DHCP</label>
-    <label><input type="radio" name="mode" value="static" onchange="toggleStatic()"> Static</label>
+    <label><input type="radio" name="mode" value="static" onchange="toggleStatic()"> Статический</label>
   </div>
   <div id="staticfields">
-    <div class="row"><label>IP / mask</label>
+    <div class="row"><label>IP / маска</label>
       <input class="ip" type="text" id="ip" placeholder="192.168.100.15">
       <span class="mono">/</span><input class="sm" type="number" id="cidr" min="1" max="32" value="24"></div>
-    <div class="row"><label>Gateway</label><input class="ip" type="text" id="gw" placeholder="192.168.100.1"></div>
+    <div class="row"><label>Шлюз</label><input class="ip" type="text" id="gw" placeholder="192.168.100.1"></div>
     <div class="row"><label>DNS</label><input class="ip" type="text" id="dns" placeholder="192.168.100.1, 8.8.8.8" style="width:220px"></div>
   </div>
-  <div class="row"><label>Auto-revert</label><input class="sm" type="number" id="revert" min="30" max="600" value="120"><span class="mono">s</span></div>
-  <p class="warn">&#9888; Wrong static settings can cut off access. After Apply, reopen the page at the NEW IP and press &laquo;Keep&raquo; within the timeout &mdash; otherwise it reverts automatically.</p>
+  <div class="row"><label>Автооткат</label><input class="sm" type="number" id="revert" min="30" max="600" value="120"><span class="mono">с</span></div>
+  <p class="warn">&#9888; Неверные статические настройки могут отрезать доступ. После «Применить» откройте страницу по НОВОМУ IP и нажмите «Оставить» до истечения таймаута &mdash; иначе настройки откатятся сами.</p>
   <div class="row">
-    <button class="primary" id="applybtn" onclick="applyNet()">Apply</button>
-    <button id="keepbtn" hidden onclick="keepNet()">Keep this config</button>
+    <button class="primary" id="applybtn" onclick="applyNet()">Применить</button>
+    <button id="keepbtn" hidden onclick="keepNet()">Оставить конфигурацию</button>
   </div>
   <div class="msg" id="netmsg"></div>
 </div>
 
-<h2>MQTT control</h2>
+<h2>Управление по MQTT</h2>
 <div class="mqtt">
-  <p>Broker <b>192.168.100.15:1883</b> &mdash; anonymous, LAN only. You <em>publish</em> commands; <em>subscribe</em> to read state &amp; logs.</p>
+  <p>Брокер <b>192.168.100.15:1883</b> &mdash; анонимно, только локальная сеть. Команды вы <em>публикуете</em>; состояние и логи &mdash; через <em>подписку</em>.</p>
   <div style="overflow-x:auto"><table class="mqtt-t">
-    <tr><th>Topic</th><th>Payload</th><th>Action</th></tr>
-    <tr><td>audio/track</td><td>N</td><td>play file whose name starts with <b>N.</b></td></tr>
-    <tr><td>audio/volume</td><td>0&ndash;100</td><td>set volume</td></tr>
-    <tr><td>audio/play</td><td>1 / 0</td><td>play / stop</td></tr>
-    <tr><td>audio/loop</td><td>1 / 0</td><td>loop current track / play once</td></tr>
-    <tr><td>audio/state</td><td>&larr; publ.</td><td>retained current state</td></tr>
-    <tr><td>audio/log</td><td>&larr; publ.</td><td>event log line</td></tr>
+    <tr><th>Топик</th><th>Значение</th><th>Действие</th></tr>
+    <tr><td>audio/track</td><td>N</td><td>играть файл, имя которого начинается с <b>N.</b></td></tr>
+    <tr><td>audio/volume</td><td>0&ndash;100</td><td>громкость</td></tr>
+    <tr><td>audio/play</td><td>1 / 0</td><td>играть / стоп</td></tr>
+    <tr><td>audio/loop</td><td>1 / 0</td><td>повтор текущего / один раз</td></tr>
+    <tr><td>audio/state</td><td>&larr; публ.</td><td>текущее состояние (retained)</td></tr>
+    <tr><td>audio/log</td><td>&larr; публ.</td><td>строка события</td></tr>
   </table></div>
-  <p>Example (from any device on the LAN):</p>
-  <pre>mosquitto_pub -h 192.168.100.15 -t audio/track  -m 2   <span style="color:var(--dim)"># play 2.*</span>
-mosquitto_pub -h 192.168.100.15 -t audio/loop   -m 1   <span style="color:var(--dim)"># loop it</span>
+  <p>Пример (с любого устройства в сети):</p>
+  <pre>mosquitto_pub -h 192.168.100.15 -t audio/track  -m 2   <span style="color:var(--dim)"># играть 2.*</span>
+mosquitto_pub -h 192.168.100.15 -t audio/loop   -m 1   <span style="color:var(--dim)"># зациклить</span>
 mosquitto_pub -h 192.168.100.15 -t audio/volume -m 80
-mosquitto_pub -h 192.168.100.15 -t audio/play   -m 0   <span style="color:var(--dim)"># stop</span>
-mosquitto_sub -h 192.168.100.15 -t 'audio/#' -v        <span style="color:var(--dim)"># watch state+logs</span></pre>
+mosquitto_pub -h 192.168.100.15 -t audio/play   -m 0   <span style="color:var(--dim)"># стоп</span>
+mosquitto_sub -h 192.168.100.15 -t 'audio/#' -v        <span style="color:var(--dim)"># смотреть состояние+логи</span></pre>
 </div>
 <footer>MPD :6600 &middot; web :80 &middot; mqtt :1883</footer>
 </main><script>
 function api(u,o){return fetch(u,o)}
 function play(f){api('/api/play?f='+encodeURIComponent(f)).then(upd)}
-function del(f){if(confirm('Delete '+f+'?'))fetch('/api/del?f='+encodeURIComponent(f)).then(function(){location.reload()})}
+function del(f){if(confirm('Удалить '+f+'?'))fetch('/api/del?f='+encodeURIComponent(f)).then(function(){location.reload()})}
 var LOOP=false;
 function upd(){fetch('/api/status').then(function(r){return r.json()}).then(function(s){
-  document.getElementById('st').innerHTML=s.playing?('&#9654; <b>'+s.song+'</b>'):'stopped';
+  document.getElementById('st').innerHTML=s.playing?('&#9654; <b>'+s.song+'</b>'):'остановлено';
   var v=document.getElementById('vol'); if(s.volume>=0 && document.activeElement!==v) v.value=s.volume;
   LOOP=!!s.loop; var lb=document.getElementById('loopbtn');
-  if(lb){lb.innerHTML=(LOOP?'&#8635; Loop: on':'&#8635; Loop: off');lb.className=LOOP?'primary':'';}
+  if(lb){lb.innerHTML=(LOOP?'&#8635; Повтор: вкл':'&#8635; Повтор: выкл');lb.className=LOOP?'primary':'';}
 }).catch(function(){})}
 function toggleLoop(){api('/api/loop?v='+(LOOP?0:1)).then(upd)}
 function toggleStatic(){var m=document.querySelector('input[name=mode]:checked');document.getElementById('staticfields').hidden=(m&&m.value==='dhcp')}
 function loadNet(){fetch('/api/net').then(function(r){return r.json()}).then(function(n){
-  document.getElementById('netcur').innerHTML='iface <b>'+n.iface+'</b> &middot; <b>'+(n.ip||'?')+'/'+(n.cidr||'?')+'</b> &middot; gw '+(n.gateway||'-')+' &middot; dns '+(n.dns.join(', ')||'-')+' &middot; mode <b>'+n.mode+'</b>';
+  document.getElementById('netcur').innerHTML='интерфейс <b>'+n.iface+'</b> &middot; <b>'+(n.ip||'?')+'/'+(n.cidr||'?')+'</b> &middot; шлюз '+(n.gateway||'-')+' &middot; dns '+(n.dns.join(', ')||'-')+' &middot; режим <b>'+n.mode+'</b>';
   var r=document.querySelector('input[name=mode][value='+n.mode+']'); if(r)r.checked=true; toggleStatic();
   if(!document.getElementById('ip').value)document.getElementById('ip').value=n.ip;
   if(n.gateway&&!document.getElementById('gw').value)document.getElementById('gw').value=n.gateway;
   if(n.cidr)document.getElementById('cidr').value=n.cidr;
   document.getElementById('keepbtn').hidden=!n.pending;
-  if(n.pending){var m=document.getElementById('netmsg');m.className='msg ok';m.textContent='Pending config detected — press Keep to make it permanent.';}
+  if(n.pending){var m=document.getElementById('netmsg');m.className='msg ok';m.textContent='Есть непринятая конфигурация — нажмите «Оставить», чтобы закрепить.';}
 })}
 function applyNet(){
   var mode=document.querySelector('input[name=mode]:checked');mode=mode?mode.value:'dhcp';
@@ -277,23 +299,30 @@ function applyNet(){
         +'&cidr='+encodeURIComponent(document.getElementById('cidr').value)
         +'&gw='+encodeURIComponent(document.getElementById('gw').value)
         +'&dns='+encodeURIComponent(document.getElementById('dns').value);
-    if(!confirm('Apply STATIC '+document.getElementById('ip').value+'/'+document.getElementById('cidr').value+'?\\nReopen at the new IP and press Keep, or it reverts.'))return;
+    if(!confirm('Применить СТАТИЧЕСКИЙ '+document.getElementById('ip').value+'/'+document.getElementById('cidr').value+'?\\nОткройте по новому IP и нажмите «Оставить», иначе будет откат.'))return;
   }
-  var m=document.getElementById('netmsg');m.className='msg';m.textContent='Applying…';
+  var m=document.getElementById('netmsg');m.className='msg';m.textContent='Применяю…';
   fetch('/api/net/apply',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body})
    .then(function(r){return r.json()}).then(function(res){
      if(res.ok){m.className='msg ok';
        m.innerHTML=(mode==='static'
-         ?'Applied. Now open <b>http://'+document.getElementById('ip').value+'/</b> and press Keep within '+document.getElementById('revert').value+'s.'
-         :'Applied (DHCP). Reconnect via the new address; press Keep to confirm.');
+         ?'Применено. Откройте <b>http://'+document.getElementById('ip').value+'/</b> и нажмите «Оставить» в течение '+document.getElementById('revert').value+' с.'
+         :'Применено (DHCP). Переподключитесь по новому адресу и нажмите «Оставить».');
        document.getElementById('keepbtn').hidden=false;
-     }else{m.className='msg err';m.textContent='Error: '+(res.error||'failed');}
+     }else{m.className='msg err';m.textContent='Ошибка: '+(res.error||'не удалось');}
    }).catch(function(){var m2=document.getElementById('netmsg');m2.className='msg ok';
-     m2.innerHTML='Connection dropped (expected on IP change). Open the page at the new IP and press Keep.';
+     m2.innerHTML='Соединение оборвалось (ожидаемо при смене IP). Откройте страницу по новому IP и нажмите «Оставить».';
      document.getElementById('keepbtn').hidden=false;});
 }
-function keepNet(){fetch('/api/net/keep').then(function(){var m=document.getElementById('netmsg');m.className='msg ok';m.textContent='Kept. Config is now permanent.';document.getElementById('keepbtn').hidden=true;})}
-setInterval(upd,2000);upd();loadNet();
+function keepNet(){fetch('/api/net/keep').then(function(){var m=document.getElementById('netmsg');m.className='msg ok';m.textContent='Закреплено. Конфигурация теперь постоянная.';document.getElementById('keepbtn').hidden=true;})}
+function checkUpd(refresh){fetch('/api/update'+(refresh?'?refresh=1':'')).then(function(r){return r.json()}).then(function(s){
+  var el=document.getElementById('upd');
+  if(s.available){el.hidden=false;el.innerHTML='<span>Доступно обновление: <b>'+s.installed+'</b> → <b>'+s.candidate+'</b></span><button onclick="applyUpd()">Обновить</button>';}
+  else{el.hidden=true;}}).catch(function(){})}
+function applyUpd(){document.getElementById('upd').innerHTML='<span>Обновление… страница переподключится.</span>';
+  fetch('/api/update/apply').catch(function(){});
+  setTimeout(function poll(){fetch('/api/update').then(function(r){return r.json()}).then(function(s){if(!s.available){location.reload()}else{setTimeout(poll,4000)}}).catch(function(){setTimeout(poll,4000)})},8000);}
+setInterval(upd,2000);upd();loadNet();checkUpd(true);
 document.getElementById('spk').addEventListener('click',function(){fetch('/api/egg').then(upd)});
 </script></body></html>"""
 
@@ -357,6 +386,11 @@ class H(BaseHTTPRequestHandler):
             if egg:
                 mpc("clear"); mpc("add", egg); mpc("play")
             self._send(204 if egg else 404)
+        elif p == "/api/update":
+            self._json(pkg_versions(refresh=q.get("refresh", [""])[0] == "1"))
+        elif p == "/api/update/apply":
+            run("systemctl", "start", "--no-block", "nanopi-audio-update.service")
+            self._json({"ok": True})
         elif p == "/api/stop":
             mpc("stop"); self._send(204)
         elif p == "/api/vol":
