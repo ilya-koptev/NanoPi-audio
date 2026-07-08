@@ -1,25 +1,26 @@
 Package: nanopi-audio
-Version: 1.0.0
+Version: 1.0.2
 Architecture: all
 Maintainer: Ilya Koptev <ilya.koptev@struhe.com>
 Depends: mpd, mpc, mosquitto, mosquitto-clients, alsa-utils, python3, device-tree-compiler
 Recommends: ffmpeg
-Filename: ./nanopi-audio_1.0.0_all.deb
-Size: 11540
-MD5sum: d24ad973a73174e0fee6f9b9d7a75461
-SHA1: 590b47c7cbc5e469a3a84776483359c8a3734992
-SHA256: 59e859f37a9c5b08d1206abb3c64445ba2209e8ac7f3503a407ba5bb37ff179f
+Filename: ./nanopi-audio_1.0.2_all.deb
+Size: 88458
+MD5sum: fc518760d631387826b48f5834c1e75e
+SHA1: 5be319879faa5d588c071fb172b38f726207225c
+SHA256: efd61e3416934e2952bc0d7a755eafb75d05b9c1b2a564095fe569f1f12ec04c
 Section: sound
 Priority: optional
 Homepage: https://github.com/ilya-koptev/NanoPi-audio
-Description: I2S audio (MAX98357A) + web UI + MQTT for NanoPi NEO
- Turns a NanoPi NEO (Allwinner H3, sun8i) into a small networked audio
- player. Ships a MAX98357A I2S DAC device-tree overlay, an MPD output
- configuration, a dependency-free web UI (track list, file upload,
- playback, volume, loop, and network/static-IP settings with safe
- auto-revert) and an MQTT bridge with command topics (track / volume /
- play / loop) plus published state and log topics.
+Description: I2S-аудио (MAX98357A) + веб-интерфейс + MQTT для NanoPi NEO
+ Превращает NanoPi NEO (Allwinner H3, sun8i) в небольшой сетевой
+ аудиоплеер. Содержит device-tree overlay для I2S-ЦАП MAX98357A,
+ настройку вывода MPD, веб-интерфейс без внешних зависимостей (список
+ треков, загрузка файлов, воспроизведение, громкость, повтор, настройки
+ сети / статического IP с безопасным автооткатом) и MQTT-мост с
+ командными топиками (track / volume / play / loop) и публикацией
+ состояния и логов.
  .
- A reboot is required after installation for the sound card to appear,
- because the audio overlay is applied by U-Boot at boot time.
+ После установки нужна перезагрузка, чтобы появилась звуковая карта:
+ аудио-оверлей применяется U-Boot при загрузке.
 
