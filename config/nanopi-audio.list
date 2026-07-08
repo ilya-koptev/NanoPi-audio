@@ -1,3 +1,4 @@
-# nanopi-audio auto-update source (flat apt repo on GitHub Pages).
-# [trusted=yes] because the repo is unsigned; it is fetched over HTTPS.
-deb [trusted=yes] https://ilya-koptev.github.io/NanoPi-audio ./
+# nanopi-audio update source — flat apt repo published to the gh-pages branch and
+# served over raw.githubusercontent.com (no GitHub Pages needed).
+# [trusted=yes]: the repo is unsigned; it is fetched over HTTPS.
+deb [trusted=yes] https://raw.githubusercontent.com/ilya-koptev/NanoPi-audio/gh-pages ./

@@ -59,7 +59,7 @@ MQTT audio/*  ─▶  nanopi-audio-mqtt  ─▶  mpc ─▶ MPD ─▶ ALSA hw:m
 
 ```bash
 # добавить apt-репозиторий и поставить
-curl -fsSL https://ilya-koptev.github.io/NanoPi-audio/nanopi-audio.list \
+curl -fsSL https://raw.githubusercontent.com/ilya-koptev/NanoPi-audio/main/config/nanopi-audio.list \
   | sudo tee /etc/apt/sources.list.d/nanopi-audio.list
 sudo apt-get update && sudo apt-get install -y nanopi-audio
 sudo reboot        # один раз: оверлей применяется U-Boot при загрузке
