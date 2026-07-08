@@ -21,7 +21,8 @@ MPD, веб-интерфейс без внешних зависимостей и
   - строка **обновления** (проверка apt, обновление по кнопке).
 - **Управление по MQTT** — публикация в `audio/track`, `audio/volume`, `audio/play`,
   `audio/loop`; плата публикует `audio/state` (retained) и `audio/log`.
-- **Установка и ручное обновление** через apt (репозиторий на GitHub Pages) или `.deb`.
+- **Установка и обновление** из GitHub Releases (`.deb`) — без GitHub Pages;
+  обновление одной кнопкой в веб-морде.
 
 ## Железо
 
@@ -58,21 +59,18 @@ MQTT audio/*  ─▶  nanopi-audio-mqtt  ─▶  mpc ─▶ MPD ─▶ ALSA hw:m
 [docs/SETUP.md](docs/SETUP.md)):
 
 ```bash
-# добавить apt-репозиторий и поставить
-curl -fsSL https://raw.githubusercontent.com/ilya-koptev/NanoPi-audio/main/config/nanopi-audio.list \
-  | sudo tee /etc/apt/sources.list.d/nanopi-audio.list
-sudo apt-get update && sudo apt-get install -y nanopi-audio
+# скачать последний релиз и поставить
+url=$(curl -fsSL https://api.github.com/repos/ilya-koptev/NanoPi-audio/releases/latest \
+      | grep -oE 'https://[^"]+\.deb' | head -n1)
+curl -fsSL -o nanopi-audio.deb "$url"
+sudo apt-get install -y ./nanopi-audio.deb
 sudo reboot        # один раз: оверлей применяется U-Boot при загрузке
-
-# обновление потом (вручную):
-sudo apt update && sudo apt install --only-upgrade nanopi-audio
 ```
 
-Либо поставить один `.deb` из [релизов](https://github.com/ilya-koptev/NanoPi-audio/releases):
+Обновление потом — кнопкой **«Обновить»** в веб-морде, либо вручную:
 
 ```bash
-sudo apt-get install -y ./nanopi-audio_*.deb
-sudo reboot
+sudo /usr/local/bin/nanopi-audio-update.sh
 ```
 
 После перезагрузки `aplay -l` должен показать `card 0: max98357a`.

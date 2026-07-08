@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, re, json, subprocess, urllib.parse, html, pwd, grp, ipaddress
+import os, re, json, subprocess, urllib.parse, urllib.request, html, pwd, grp, ipaddress, time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 MUSIC = "/var/lib/mpd/music"
@@ -50,19 +50,39 @@ def dpkg_gt(a, b):
     return run("dpkg", "--compare-versions", a, "gt", b).returncode == 0
 
 
+_REL = {"t": 0.0, "tag": "", "url": ""}
+GH_LATEST = "https://api.github.com/repos/ilya-koptev/NanoPi-audio/releases/latest"
+
+
+def latest_release():
+    now = time.time()
+    if now - _REL["t"] < 60 and _REL["tag"]:
+        return _REL["tag"], _REL["url"]
+    tag, url = "", ""
+    try:
+        req = urllib.request.Request(GH_LATEST, headers={
+            "User-Agent": "nanopi-audio", "Accept": "application/vnd.github+json"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            d = json.load(resp)
+        tag = (d.get("tag_name") or "").lstrip("v")
+        for a in d.get("assets") or []:
+            if (a.get("name") or "").endswith(".deb"):
+                url = a.get("browser_download_url") or ""
+                break
+    except Exception:
+        pass
+    if tag:
+        _REL.update(t=now, tag=tag, url=url)
+    return tag, url
+
+
 def pkg_versions(refresh=False):
     if refresh:
-        run("apt-get", "update",
-            "-o", "Dir::Etc::SourceList=/etc/apt/sources.list.d/nanopi-audio.list",
-            "-o", "Dir::Etc::SourceParts=/dev/null",
-            "-o", "APT::Get::List-Cleanup=0", timeout=90)
+        _REL["t"] = 0.0
     inst = run("dpkg-query", "-W", "-f=${Version}", "nanopi-audio").stdout.strip()
-    cand = ""
-    m = re.search(r"Candidate:\s*(\S+)", run("apt-cache", "policy", "nanopi-audio").stdout)
-    if m and m.group(1) != "(none)":
-        cand = m.group(1)
-    return {"installed": inst, "candidate": cand,
-            "available": bool(cand) and cand != inst and dpkg_gt(cand, inst)}
+    tag, _ = latest_release()
+    return {"installed": inst, "candidate": tag or inst,
+            "available": bool(tag) and dpkg_gt(tag, inst)}
 
 
 def safe(name):
@@ -268,7 +288,7 @@ mosquitto_pub -h 192.168.100.15 -t audio/play   -m 0   <span style="color:var(--
 mosquitto_sub -h 192.168.100.15 -t 'audio/#' -v        <span style="color:var(--dim)"># смотреть состояние+логи</span></pre>
 </div>
 <div class="upd" id="upd" hidden></div>
-<footer>MPD :6600 &middot; web :80 &middot; mqtt :1883</footer>
+<footer>SSH :22 &middot; MPD :6600 &middot; web :80 &middot; mqtt :1883</footer>
 </main><script>
 function api(u,o){return fetch(u,o)}
 function play(f){api('/api/play?f='+encodeURIComponent(f)).then(upd)}

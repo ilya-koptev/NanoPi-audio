@@ -69,9 +69,10 @@
 ## 5. Установка nanopi-audio
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ilya-koptev/NanoPi-audio/main/config/nanopi-audio.list \
-  | sudo tee /etc/apt/sources.list.d/nanopi-audio.list
-sudo apt-get update && sudo apt-get install -y nanopi-audio
+url=$(curl -fsSL https://api.github.com/repos/ilya-koptev/NanoPi-audio/releases/latest \
+      | grep -oE 'https://[^"]+\.deb' | head -n1)
+curl -fsSL -o nanopi-audio.deb "$url"
+sudo apt-get install -y ./nanopi-audio.deb
 sudo reboot
 ```
 
