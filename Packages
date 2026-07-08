@@ -1,14 +1,14 @@
 Package: nanopi-audio
-Version: 1.0.2
+Version: 1.0.3
 Architecture: all
 Maintainer: Ilya Koptev <ilya.koptev@struhe.com>
 Depends: mpd, mpc, mosquitto, mosquitto-clients, alsa-utils, python3, device-tree-compiler
 Recommends: ffmpeg
-Filename: ./nanopi-audio_1.0.2_all.deb
-Size: 88458
-MD5sum: fc518760d631387826b48f5834c1e75e
-SHA1: 5be319879faa5d588c071fb172b38f726207225c
-SHA256: efd61e3416934e2952bc0d7a755eafb75d05b9c1b2a564095fe569f1f12ec04c
+Filename: ./nanopi-audio_1.0.3_all.deb
+Size: 88498
+MD5sum: 6ddadca7226c78851de999ab494503c6
+SHA1: 3f306bc4711430e59aaba7a068c4b22d31d559c7
+SHA256: 96e112fe4defec05c809d3ba28243a8d16a88287193265d7fa150a4e1cf0d1d3
 Section: sound
 Priority: optional
 Homepage: https://github.com/ilya-koptev/NanoPi-audio
