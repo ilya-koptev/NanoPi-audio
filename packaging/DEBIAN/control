@@ -1,0 +1,19 @@
+Package: nanopi-audio
+Version: __VERSION__
+Architecture: all
+Maintainer: __MAINTAINER__
+Depends: mpd, mpc, mosquitto, mosquitto-clients, alsa-utils, python3, device-tree-compiler
+Recommends: ffmpeg
+Section: sound
+Priority: optional
+Homepage: __HOMEPAGE__
+Description: I2S audio (MAX98357A) + web UI + MQTT for NanoPi NEO
+ Turns a NanoPi NEO (Allwinner H3, sun8i) into a small networked audio
+ player. Ships a MAX98357A I2S DAC device-tree overlay, an MPD output
+ configuration, a dependency-free web UI (track list, file upload,
+ playback, volume, loop, and network/static-IP settings with safe
+ auto-revert) and an MQTT bridge with command topics (track / volume /
+ play / loop) plus published state and log topics.
+ .
+ A reboot is required after installation for the sound card to appear,
+ because the audio overlay is applied by U-Boot at boot time.

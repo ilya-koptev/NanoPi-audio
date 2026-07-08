@@ -1,0 +1,3 @@
+# nanopi-audio auto-update source (flat apt repo on GitHub Pages).
+# [trusted=yes] because the repo is unsigned; it is fetched over HTTPS.
+deb [trusted=yes] https://ilya-koptev.github.io/NanoPi-audio ./

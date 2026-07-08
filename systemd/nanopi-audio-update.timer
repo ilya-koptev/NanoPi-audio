@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for nanopi-audio updates daily
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=1d
+RandomizedDelaySec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

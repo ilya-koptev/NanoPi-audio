@@ -1,0 +1,72 @@
+#!/bin/bash
+# nanopi-audio postinst — idempotent setup of overlay, MPD, mosquitto, services.
+set -e
+
+SHARE=/usr/share/nanopi-audio
+ENV=/boot/armbianEnv.txt
+MPDC=/etc/mpd.conf
+
+log() { echo "nanopi-audio: $*"; }
+
+# --- 1. device-tree overlay: compile + enable ---
+if command -v dtc >/dev/null 2>&1; then
+    mkdir -p /boot/overlay-user
+    if dtc -@ -q -I dts -O dtb -o /boot/overlay-user/max98357a.dtbo "$SHARE/max98357a.dts" 2>/dev/null; then
+        log "overlay compiled -> /boot/overlay-user/max98357a.dtbo"
+    else
+        log "WARNING: overlay compilation failed"
+    fi
+fi
+if [ -f "$ENV" ]; then
+    if grep -q '^user_overlays=' "$ENV"; then
+        grep -qw max98357a "$ENV" || sed -i 's/^user_overlays=.*/& max98357a/' "$ENV"
+    else
+        echo 'user_overlays=max98357a' >> "$ENV"
+    fi
+    log "armbianEnv.txt: user_overlays includes max98357a"
+fi
+
+# --- 2. MPD configuration ---
+if [ -f "$MPDC" ]; then
+    if grep -qE '^[[:space:]]*bind_to_address[[:space:]]+"localhost"' "$MPDC"; then
+        sed -i 's/^[[:space:]]*bind_to_address[[:space:]]\+"localhost"/bind_to_address "0.0.0.0"/' "$MPDC"
+    elif ! grep -qE '^[[:space:]]*bind_to_address[[:space:]]+"0.0.0.0"' "$MPDC"; then
+        echo 'bind_to_address "0.0.0.0"' >> "$MPDC"
+    fi
+    if ! grep -q 'MAX98357A' "$MPDC"; then
+        cat >> "$MPDC" <<'EOM'
+
+# nanopi-audio MAX98357A
+audio_output {
+	type		"alsa"
+	name		"MAX98357A"
+	device		"hw:CARD=max98357a,0"
+	format		"44100:32:2"
+	mixer_type	"software"
+}
+EOM
+    fi
+fi
+mkdir -p /var/lib/mpd/music
+chown -R mpd:audio /var/lib/mpd/music 2>/dev/null || true
+
+# --- 3. services ---
+systemctl daemon-reload || true
+# MPD: standalone (socket-activation ignores bind_to_address)
+systemctl disable --now mpd.socket >/dev/null 2>&1 || true
+systemctl enable mpd >/dev/null 2>&1 || true
+systemctl try-restart mpd >/dev/null 2>&1 || true
+# mosquitto broker
+systemctl enable mosquitto >/dev/null 2>&1 || true
+systemctl restart mosquitto >/dev/null 2>&1 || true
+# our services
+systemctl enable nanopi-audio-web.service nanopi-audio-mqtt.service >/dev/null 2>&1 || true
+systemctl restart nanopi-audio-web.service nanopi-audio-mqtt.service >/dev/null 2>&1 || true
+# auto-update timer
+systemctl enable --now nanopi-audio-update.timer >/dev/null 2>&1 || true
+
+log "installed. Web: http://<ip>/  |  MQTT: <ip>:1883 (audio/*)"
+log "REBOOT REQUIRED for the sound card to appear (overlay applied at boot)."
+
+#DEBHELPER#
+exit 0

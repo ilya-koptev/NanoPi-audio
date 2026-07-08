@@ -1,0 +1,8 @@
+[Unit]
+Description=NanoPi audio auto-update (apt)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/nanopi-audio-update.sh

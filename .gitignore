@@ -1,0 +1,4 @@
+build/
+public/
+*.deb
+*.dtbo

@@ -1,0 +1,50 @@
+name: build-and-publish
+
+# Build the .deb on a version tag, attach it to a GitHub Release, and publish
+# a flat apt repository to GitHub Pages (branch gh-pages).
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packaging tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev apt-utils
+
+      - name: Sync version with tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: echo "${GITHUB_REF_NAME#v}" > VERSION
+
+      - name: Build .deb
+        run: bash packaging/build-deb.sh
+
+      - name: Assemble flat apt repo
+        run: |
+          mkdir -p public
+          cp build/*.deb public/
+          cd public
+          dpkg-scanpackages --multiversion . > Packages
+          gzip -9kf Packages
+          apt-ftparchive release . > Release
+
+      - name: Attach .deb to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/*.deb
+
+      - name: Publish apt repo to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          keep_files: true

@@ -1,0 +1,49 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "allwinner,sun8i-h3";
+
+    fragment@0 {
+        target-path = "/";
+        __overlay__ {
+            max98357a: max98357a {
+                #sound-dai-cells = <0>;
+                compatible = "maxim,max98357a";
+                sdmode-gpios = <&pio 0 21 0>;
+                status = "okay";
+            };
+
+            sound-max98357a {
+                compatible = "simple-audio-card";
+                simple-audio-card,name = "max98357a";
+                simple-audio-card,format = "i2s";
+                simple-audio-card,mclk-fs = <512>;
+                simple-audio-card,frame-master = <&sndcpu>;
+                simple-audio-card,bitclock-master = <&sndcpu>;
+                status = "okay";
+                sndcpu: simple-audio-card,cpu { sound-dai = <&i2s0>; };
+                simple-audio-card,codec { sound-dai = <&max98357a>; };
+            };
+        };
+    };
+
+    fragment@1 {
+        target = <&pio>;
+        __overlay__ {
+            i2s0_pins: i2s0-pins {
+                pins = "PA18", "PA19", "PA20";
+                function = "i2s0";
+            };
+        };
+    };
+
+    fragment@2 {
+        target = <&i2s0>;
+        __overlay__ {
+            pinctrl-names = "default";
+            pinctrl-0 = <&i2s0_pins>;
+            status = "okay";
+        };
+    };
+};

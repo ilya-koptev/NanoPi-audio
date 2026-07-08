@@ -1,0 +1,12 @@
+[Unit]
+Description=NanoPi audio MQTT bridge (audio/* topics -> MPD)
+After=network.target mpd.service mosquitto.service
+Wants=mpd.service mosquitto.service
+
+[Service]
+ExecStart=/usr/local/bin/mqtt-audio.sh
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
