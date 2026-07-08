@@ -37,14 +37,24 @@ pub_state
 mosquitto_sub -h "$H" -t audio/track -t audio/volume -t audio/play -t audio/loop -F '%t %p' | \
 while read -r topic payload; do
   val=$(printf '%s' "$payload" | tr -dc '0-9')
+  name=$(printf '%s' "$payload" | tr -d '\r' | sed 's#.*/##; s/^[[:space:]]*//; s/[[:space:]]*$//')
   case "$topic" in
     audio/track)
-      [ -z "$val" ] && continue
-      f=$(ls -1 "$MUSIC" | grep -E "^${val}\." | head -n1)
+      [ -z "$name" ] && continue
+      # match a file by name without extension (e.g. "sovy" -> sovy.mp3, "2" -> 2.wav);
+      # a full filename also works. egg.* stays hidden.
+      f=""
+      for cand in "$MUSIC"/*.*; do
+        [ -e "$cand" ] || continue
+        b=${cand##*/}
+        case "${b,,}" in egg.*) continue ;; esac
+        stem=${b%.*}
+        if [ "${stem,,}" = "${name,,}" ] || [ "${b,,}" = "${name,,}" ]; then f=$b; break; fi
+      done
       if [ -n "$f" ]; then
-        $MPC clear; $MPC add "$f"; $MPC play; log "track $val -> $f"
+        $MPC clear; $MPC add "$f"; $MPC play; log "track '$name' -> $f"
       else
-        log "track $val: file not found"
+        log "track '$name': not found"
       fi
       ;;
     audio/volume)

@@ -253,7 +253,7 @@ pre{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:.8
   <p>Брокер <b>192.168.100.15:1883</b> &mdash; анонимно, только локальная сеть. Команды вы <em>публикуете</em>; состояние и логи &mdash; через <em>подписку</em>.</p>
   <div style="overflow-x:auto"><table class="mqtt-t">
     <tr><th>Топик</th><th>Значение</th><th>Действие</th></tr>
-    <tr><td>audio/track</td><td>N</td><td>играть файл, имя которого начинается с <b>N.</b></td></tr>
+    <tr><td>audio/track</td><td>имя</td><td>играть файл по имени без расширения (напр. <b>sovy</b> или <b>2</b>); нет такого — ошибка в лог</td></tr>
     <tr><td>audio/volume</td><td>0&ndash;100</td><td>громкость</td></tr>
     <tr><td>audio/play</td><td>1 / 0</td><td>играть / стоп</td></tr>
     <tr><td>audio/loop</td><td>1 / 0</td><td>повтор текущего / один раз</td></tr>
