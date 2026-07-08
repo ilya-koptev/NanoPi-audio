@@ -285,11 +285,7 @@ function applyNet(){
 }
 function keepNet(){fetch('/api/net/keep').then(function(){var m=document.getElementById('netmsg');m.className='msg ok';m.textContent='Kept. Config is now permanent.';document.getElementById('keepbtn').hidden=true;})}
 setInterval(upd,2000);upd();loadNet();
-(function(){var spk=document.getElementById('spk'),ttl=document.getElementById('ttl'),orig=ttl.innerHTML;
- function on(e){if(e)e.preventDefault();ttl.textContent='Димка - дурак';}
- function off(){ttl.innerHTML=orig;}
- spk.addEventListener('mousedown',on);spk.addEventListener('mouseup',off);spk.addEventListener('mouseleave',off);
- spk.addEventListener('touchstart',on,{passive:false});spk.addEventListener('touchend',off);spk.addEventListener('touchcancel',off);})();
+document.getElementById('spk').addEventListener('click',function(){fetch('/api/egg').then(upd)});
 </script></body></html>"""
 
 
@@ -347,6 +343,11 @@ class H(BaseHTTPRequestHandler):
             if f:
                 mpc("clear"); mpc("add", f); mpc("play")
             self._send(204 if f else 404)
+        elif p == "/api/egg":
+            egg = next((f for f in tracks() if f.lower().startswith("egg.")), None)
+            if egg:
+                mpc("clear"); mpc("add", egg); mpc("play")
+            self._send(204 if egg else 404)
         elif p == "/api/stop":
             mpc("stop"); self._send(204)
         elif p == "/api/vol":

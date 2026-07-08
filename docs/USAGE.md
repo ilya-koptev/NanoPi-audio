@@ -86,12 +86,24 @@ ever lock yourself out, recover via the serial console or by editing
 
 ## Updates
 
-The `nanopi-audio-update.timer` checks the apt repo daily and upgrades in place.
-Force it now:
+Updates are **manual** — nothing auto-upgrades. When a new version is published,
+on the board run:
 
 ```bash
-sudo systemctl start nanopi-audio-update.service
+sudo apt update && sudo apt install --only-upgrade nanopi-audio
+# or install a downloaded package directly:
+sudo apt install ./nanopi-audio_*.deb
 ```
+
+(There is also `/usr/local/bin/nanopi-audio-update.sh`, which does the apt upgrade
+in one step — run it by hand when you want to update.)
+
+## Easter egg
+
+Clicking the 🔊 speaker icon at the top of the web page plays the track
+`/var/lib/mpd/music/egg.wav`. The package ships a short placeholder jingle there —
+replace that file on the device with any track you like (keep the name `egg.wav`)
+and it becomes your click sound.
 
 ## Troubleshooting
 

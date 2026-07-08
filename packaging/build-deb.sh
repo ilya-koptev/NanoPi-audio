@@ -19,12 +19,12 @@ install -Dm755 src/mqtt-audio.sh          "$ROOT/usr/local/bin/mqtt-audio.sh"
 install -Dm755 src/net-rollback.sh        "$ROOT/usr/local/bin/net-rollback.sh"
 install -Dm755 src/nanopi-audio-update.sh "$ROOT/usr/local/bin/nanopi-audio-update.sh"
 install -Dm644 overlay/max98357a.dts      "$ROOT/usr/share/nanopi-audio/max98357a.dts"
+install -Dm644 assets/egg.wav             "$ROOT/usr/share/nanopi-audio/egg.wav"
 install -Dm644 config/nanopi-audio-mosquitto.conf "$ROOT/etc/mosquitto/conf.d/nanopi-audio.conf"
 install -Dm644 config/nanopi-audio.list   "$ROOT/etc/apt/sources.list.d/nanopi-audio.list"
 for u in web mqtt update; do
     install -Dm644 "systemd/nanopi-audio-${u}.service" "$ROOT/lib/systemd/system/nanopi-audio-${u}.service"
 done
-install -Dm644 systemd/nanopi-audio-update.timer "$ROOT/lib/systemd/system/nanopi-audio-update.timer"
 
 # control + maintainer scripts
 sed -e "s/__VERSION__/${VERSION}/" \

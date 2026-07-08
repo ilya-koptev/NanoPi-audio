@@ -21,9 +21,12 @@ apt-based auto-update.
   - **network settings** (DHCP ⇄ static IP) with a safety **auto-revert**.
 - **MQTT control** — publish to `audio/track`, `audio/volume`, `audio/play`,
   `audio/loop`; the board publishes `audio/state` (retained) and `audio/log`.
-- **Auto-update** over apt from a GitHub Pages repository.
+- **Install & manual update** over apt (GitHub Pages repo) or a downloaded `.deb`.
 
 ## Hardware
+
+Full parts list with links: **[docs/BOM.md](docs/BOM.md)** (NanoPi NEO, MAX98357A,
+12 V→5 V buck, speaker).
 
 Only three signal wires plus power, ground and a mute line. Solder with the board
 **powered off**. Pins refer to the NanoPi NEO 12-pin header.
@@ -54,11 +57,14 @@ Web UI (:80)  ─▶  MPD / netplan / uploads
 On a NanoPi NEO already running Armbian (see [docs/SETUP.md](docs/SETUP.md) to get there):
 
 ```bash
-# add the apt repo and install (auto-update included)
+# add the apt repo and install
 curl -fsSL https://ilya-koptev.github.io/NanoPi-audio/nanopi-audio.list \
   | sudo tee /etc/apt/sources.list.d/nanopi-audio.list
 sudo apt-get update && sudo apt-get install -y nanopi-audio
 sudo reboot        # required once: the overlay is applied by U-Boot at boot
+
+# update later (manual):
+sudo apt update && sudo apt install --only-upgrade nanopi-audio
 ```
 
 Or install a single `.deb` from the [Releases](https://github.com/ilya-koptev/NanoPi-audio/releases):

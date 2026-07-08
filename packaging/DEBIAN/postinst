@@ -49,6 +49,12 @@ EOM
 fi
 mkdir -p /var/lib/mpd/music
 chown -R mpd:audio /var/lib/mpd/music 2>/dev/null || true
+# easter-egg track: placeholder jingle played by clicking the speaker icon.
+# Replace /var/lib/mpd/music/egg.wav on the device with your own track to change it.
+if [ ! -e /var/lib/mpd/music/egg.wav ] && [ -f "$SHARE/egg.wav" ]; then
+    cp "$SHARE/egg.wav" /var/lib/mpd/music/egg.wav
+    chown mpd:audio /var/lib/mpd/music/egg.wav 2>/dev/null || true
+fi
 
 # --- 3. services ---
 systemctl daemon-reload || true
@@ -62,8 +68,9 @@ systemctl restart mosquitto >/dev/null 2>&1 || true
 # our services
 systemctl enable nanopi-audio-web.service nanopi-audio-mqtt.service >/dev/null 2>&1 || true
 systemctl restart nanopi-audio-web.service nanopi-audio-mqtt.service >/dev/null 2>&1 || true
-# auto-update timer
-systemctl enable --now nanopi-audio-update.timer >/dev/null 2>&1 || true
+# refresh MPD database so the egg track is playable
+mpc update >/dev/null 2>&1 || true
+# NOTE: updates are manual (see 'nanopi-audio-update.sh' / apt). No auto-update timer.
 
 log "installed. Web: http://<ip>/  |  MQTT: <ip>:1883 (audio/*)"
 log "REBOOT REQUIRED for the sound card to appear (overlay applied at boot)."

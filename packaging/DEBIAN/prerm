@@ -2,6 +2,6 @@
 set -e
 if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
     systemctl disable --now nanopi-audio-web.service nanopi-audio-mqtt.service \
-        nanopi-audio-update.timer >/dev/null 2>&1 || true
+        >/dev/null 2>&1 || true
 fi
 exit 0
