@@ -171,9 +171,8 @@ h1{font-size:1.5rem;margin:.2rem 0 1rem;letter-spacing:-.01em}
 h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);margin:2rem 0 .6rem;font-family:ui-monospace,Menlo,Consolas,monospace}
 .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
 .status{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:.7rem .9rem;color:var(--dim)}
-.upd{background:var(--acw);border:1px solid var(--ac);color:var(--ac);border-radius:10px;padding:.6rem .9rem;margin-bottom:1rem;font-size:.9rem;display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.upd button{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:600}
-.upd.current{background:var(--card);border-color:var(--bd);color:var(--dim)}
+.upd{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;color:var(--dim);margin:.5rem 0 0;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.upd button{padding:.2rem .55rem;font-size:.78rem}
 .status b{color:var(--fg)}
 .ctl{display:flex;align-items:center;gap:1rem;margin-top:.8rem;flex-wrap:wrap}
 input[type=range]{flex:1;min-width:140px;accent-color:var(--ac)}
@@ -211,7 +210,6 @@ pre{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:.8
 [hidden]{display:none!important}
 </style></head><body><main>
 <h1><span id="spk" style="cursor:pointer;-webkit-user-select:none;user-select:none">&#128266;</span> <span id="ttl">NanoPi &mdash; аудио</span></h1>
-<div class="upd" id="upd" hidden></div>
 <div class="status" id="st">&hellip;</div>
 <div class="ctl">
   <button onclick="api('/api/stop').then(upd)">&#9632; Стоп</button>
@@ -269,6 +267,7 @@ mosquitto_pub -h 192.168.100.15 -t audio/volume -m 80
 mosquitto_pub -h 192.168.100.15 -t audio/play   -m 0   <span style="color:var(--dim)"># стоп</span>
 mosquitto_sub -h 192.168.100.15 -t 'audio/#' -v        <span style="color:var(--dim)"># смотреть состояние+логи</span></pre>
 </div>
+<div class="upd" id="upd" hidden></div>
 <footer>MPD :6600 &middot; web :80 &middot; mqtt :1883</footer>
 </main><script>
 function api(u,o){return fetch(u,o)}
