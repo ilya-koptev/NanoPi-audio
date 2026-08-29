@@ -254,10 +254,10 @@ pre{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:.8
   </div>
   <div id="staticfields">
     <div class="row"><label>IP / маска</label>
-      <input class="ip" type="text" id="ip" placeholder="192.168.100.15">
+      <input class="ip" type="text" id="ip" placeholder="192.168.0.15">
       <span class="mono">/</span><input class="sm" type="number" id="cidr" min="1" max="32" value="24"></div>
-    <div class="row"><label>Шлюз</label><input class="ip" type="text" id="gw" placeholder="192.168.100.1"></div>
-    <div class="row"><label>DNS</label><input class="ip" type="text" id="dns" placeholder="192.168.100.1, 8.8.8.8" style="width:220px"></div>
+    <div class="row"><label>Шлюз</label><input class="ip" type="text" id="gw" placeholder="192.168.0.1"></div>
+    <div class="row"><label>DNS</label><input class="ip" type="text" id="dns" placeholder="192.168.0.1, 8.8.8.8" style="width:220px"></div>
   </div>
   <div class="row"><label>Автооткат</label><input class="sm" type="number" id="revert" min="30" max="600" value="120"><span class="mono">с</span></div>
   <p class="warn">&#9888; Неверные статические настройки могут отрезать доступ. После «Применить» откройте страницу по НОВОМУ IP и нажмите «Оставить» до истечения таймаута &mdash; иначе настройки откатятся сами.</p>
@@ -270,7 +270,7 @@ pre{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:.8
 
 <h2>Управление по MQTT</h2>
 <div class="mqtt">
-  <p>Брокер <b>192.168.100.15:1883</b> &mdash; анонимно, только локальная сеть. Команды вы <em>публикуете</em>; состояние и логи &mdash; через <em>подписку</em>.</p>
+  <p>Брокер <b><nanopi>:1883</b> &mdash; анонимно, только локальная сеть. Команды вы <em>публикуете</em>; состояние и логи &mdash; через <em>подписку</em>.</p>
   <div style="overflow-x:auto"><table class="mqtt-t">
     <tr><th>Топик</th><th>Значение</th><th>Действие</th></tr>
     <tr><td>audio/track</td><td>имя</td><td>играть файл по имени без расширения (напр. <b>sovy</b> или <b>2</b>); нет такого — ошибка в лог</td></tr>
@@ -281,11 +281,11 @@ pre{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:.8
     <tr><td>audio/log</td><td>&larr; публ.</td><td>строка события</td></tr>
   </table></div>
   <p>Пример (с любого устройства в сети):</p>
-  <pre>mosquitto_pub -h 192.168.100.15 -t audio/track  -m 2   <span style="color:var(--dim)"># играть 2.*</span>
-mosquitto_pub -h 192.168.100.15 -t audio/loop   -m 1   <span style="color:var(--dim)"># зациклить</span>
-mosquitto_pub -h 192.168.100.15 -t audio/volume -m 80
-mosquitto_pub -h 192.168.100.15 -t audio/play   -m 0   <span style="color:var(--dim)"># стоп</span>
-mosquitto_sub -h 192.168.100.15 -t 'audio/#' -v        <span style="color:var(--dim)"># смотреть состояние+логи</span></pre>
+  <pre>mosquitto_pub -h <nanopi> -t audio/track  -m 2   <span style="color:var(--dim)"># играть 2.*</span>
+mosquitto_pub -h <nanopi> -t audio/loop   -m 1   <span style="color:var(--dim)"># зациклить</span>
+mosquitto_pub -h <nanopi> -t audio/volume -m 80
+mosquitto_pub -h <nanopi> -t audio/play   -m 0   <span style="color:var(--dim)"># стоп</span>
+mosquitto_sub -h <nanopi> -t 'audio/#' -v        <span style="color:var(--dim)"># смотреть состояние+логи</span></pre>
 </div>
 <div class="upd" id="upd" hidden></div>
 <footer>SSH :22 &middot; MPD :6600 &middot; web :80 &middot; mqtt :1883</footer>
